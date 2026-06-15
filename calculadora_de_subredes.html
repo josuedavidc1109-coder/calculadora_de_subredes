@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SubnetLab — Calculadora de Subredes</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a0f;
+    --surface: #0a1420;
+    --card: #0d1c2e;
+    --border: #0f3460;
+    --accent: #00d4ff;
+    --accent2: #00ff88;
+    --accent3: #ff6b35;
+    --text: #c9e8f0;
+    --muted: #4a7a99;
+    --glow: rgba(0,212,255,0.15);
+    --glow2: rgba(0,255,136,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridShift 20s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes gridShift {
+    0% { background-position: 0 0; }
+    100% { background-position: 40px 40px; }
+  }
+
+  /* Floating orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+    animation: orbFloat 8s ease-in-out infinite alternate;
+  }
+  .orb1 { width: 400px; height: 400px; background: rgba(0,212,255,0.06); top: -100px; left: -100px; animation-delay: 0s; }
+  .orb2 { width: 300px; height: 300px; background: rgba(0,255,136,0.05); bottom: -50px; right: -50px; animation-delay: 3s; }
+  .orb3 { width: 200px; height: 200px; background: rgba(255,107,53,0.04); top: 50%; left: 50%; animation-delay: 6s; }
+
+  @keyframes orbFloat {
+    from { transform: translate(0,0) scale(1); }
+    to { transform: translate(30px, 20px) scale(1.1); }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 20px 60px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 50px;
+    animation: fadeDown 0.8s ease both;
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .logo-icon {
+    width: 48px; height: 48px;
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 20px var(--glow), inset 0 0 20px var(--glow);
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 20px var(--glow), inset 0 0 20px var(--glow); }
+    50% { box-shadow: 0 0 40px rgba(0,212,255,0.3), inset 0 0 30px rgba(0,212,255,0.2); }
+  }
+
+  h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 900;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-transform: uppercase;
+  }
+
+  .subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 3px;
+    margin-top: 8px;
+  }
+
+  .tagline {
+    margin-top: 6px;
+    color: var(--accent3);
+    font-size: 14px;
+    letter-spacing: 2px;
+    font-weight: 300;
+  }
+
+  /* Scan line decorations */
+  .scan-line {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    margin: 20px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-line::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 1px;
+    background: linear-gradient(90deg, transparent, white, transparent);
+    animation: scan 3s linear infinite;
+  }
+  @keyframes scan { to { left: 200%; } }
+
+  /* Input Panel */
+  .input-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px;
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.8s ease 0.2s both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .input-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+  }
+
+  .panel-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-label::before {
+    content: '//';
+    color: var(--accent3);
+  }
+
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: end;
+  }
+
+  @media (max-width: 600px) {
+    .inputs-grid { grid-template-columns: 1fr; }
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .input-wrapper {
+    position: relative;
+  }
+
+  .input-wrapper .bracket {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 18px;
+    color: var(--accent);
+    pointer-events: none;
+  }
+  .bracket-left { left: 14px; }
+  .bracket-right { right: 14px; }
+
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 36px;
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 16px;
+    letter-spacing: 2px;
+    outline: none;
+    transition: all 0.3s;
+    text-align: center;
+  }
+
+  input[type="text"]:focus, input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--glow), 0 0 0 1px var(--accent);
+    background: #0a1828;
+  }
+
+  input::placeholder { color: var(--muted); letter-spacing: 1px; }
+
+  /* Select class input */
+  select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 1px;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    appearance: none;
+    text-align: center;
+  }
+  select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--glow);
+  }
+  select option { background: var(--card); }
+
+  .btn {
+    grid-column: 1 / -1;
+    position: relative;
+    background: transparent;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 32px;
+    color: var(--accent);
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.15), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+  }
+
+  .btn:hover::before { transform: translateX(100%); }
+  .btn:hover {
+    box-shadow: 0 0 30px var(--glow), 0 0 60px var(--glow);
+    color: white;
+    background: rgba(0,212,255,0.08);
+  }
+
+  .btn:active { transform: scale(0.98); }
+
+  /* Error */
+  .error-msg {
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.4);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--accent3);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    display: none;
+    margin-top: 16px;
+    animation: shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  /* Results */
+  #results {
+    display: none;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .results-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent2);
+  }
+
+  .subnet-count-badge {
+    background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.3);
+    border-radius: 20px;
+    padding: 4px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--accent2);
+    letter-spacing: 2px;
+  }
+
+  /* Summary cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 30px;
+  }
+
+  .sum-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .sum-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+  }
+  .sum-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .sum-value {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(18px, 3vw, 26px);
+    font-weight: 900;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .sum-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* Table */
+  .table-wrapper {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .table-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent), var(--accent3));
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  /* Scrollbar */
+  .table-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+  .table-scroll::-webkit-scrollbar-track { background: var(--surface); }
+  .table-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .table-scroll::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+  }
+
+  th {
+    padding: 16px 20px;
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(15,52,96,0.4);
+    vertical-align: middle;
+    white-space: nowrap;
+    color: var(--text);
+    transition: background 0.2s;
+  }
+
+  tr:hover td { background: rgba(0,212,255,0.04); }
+  tr:last-child td { border-bottom: none; }
+
+  .td-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent3);
+    width: 50px;
+  }
+
+  .td-network { color: var(--accent2); font-weight: 600; }
+  .td-mask { color: var(--muted); }
+  .td-range { color: var(--text); }
+  .td-broadcast { color: var(--accent3); }
+  .td-hosts {
+    color: var(--accent);
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+  }
+
+  .cidr-badge {
+    display: inline-block;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.25);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: var(--accent);
+    margin-left: 6px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 50px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    animation: fadeUp 1s ease 0.6s both;
+  }
+
+  /* Copy button */
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 4px;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* IP Class indicator */
+  .class-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--accent3);
+    letter-spacing: 1px;
+  }
+
+  /* Progress bar for hosts */
+  .hosts-bar {
+    width: 60px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .hosts-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+  }
+
+  /* Typing animation for results */
+  @keyframes typeIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  tr { animation: typeIn 0.3s ease both; }
+
+  .blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-line">
+      <div class="logo-icon">🌐</div>
+      <h1>SubnetLab</h1>
+    </div>
+    <p class="subtitle">// Calculadora de Subredes IPv4 //</p>
+    <p class="tagline">Divide · Conquista · Conecta</p>
+    <div class="scan-line"></div>
+  </div>
+
+  <!-- Input Panel -->
+  <div class="input-panel">
+    <div class="panel-label">Configuración de Red</div>
+
+    <div class="inputs-grid">
+      <div class="field-group">
+        <label>Dirección IP</label>
+        <div class="input-wrapper">
+          <span class="bracket bracket-left">[</span>
+          <input type="text" id="ipInput" placeholder="192.168.1.0" maxlength="18" autocomplete="off" spellcheck="false">
+          <span class="bracket bracket-right">]</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Cantidad de Subredes</label>
+        <div class="input-wrapper">
+          <span class="bracket bracket-left">[</span>
+          <input type="number" id="subnetCount" placeholder="4" min="1" max="65536">
+          <span class="bracket bracket-right">]</span>
+        </div>
+      </div>
+
+      <div class="field-group" style="grid-column: 1 / -1;">
+        <label>Clase / Máscara Base (opcional)</label>
+        <select id="classSelect">
+          <option value="auto">AUTO — Detectar automáticamente</option>
+          <option value="8">Clase A  /8   — 255.0.0.0</option>
+          <option value="16">Clase B  /16  — 255.255.0.0</option>
+          <option value="24">Clase C  /24  — 255.255.255.0</option>
+        </select>
+      </div>
+
+      <button class="btn" onclick="calculate()">
+        ⚡ CALCULAR SUBREDES
+      </button>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="results-header">
+      <span class="results-title">▶ RESULTADOS</span>
+      <span class="subnet-count-badge" id="subnetBadge">— SUBREDES</span>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-cards" id="summaryCards"></div>
+
+    <!-- Table -->
+    <div class="table-wrapper">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Red</th>
+              <th>Máscara</th>
+              <th>Primer Host</th>
+              <th>Último Host</th>
+              <th>Broadcast</th>
+              <th>Hosts Útiles</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>SUBNETLAB v2.0 &nbsp;·&nbsp; IPv4 CIDR &nbsp;·&nbsp; ALL RIGHTS RESERVED</p>
+    <p style="margin-top: 6px; color: #1e4060;">▓▒░ NETWORK ENGINEERING TOOLKIT ░▒▓</p>
+  </div>
+
+</div>
+
+<script>
+  // Input formatting
+  document.getElementById('ipInput').addEventListener('input', function(e) {
+    let v = e.target.value.replace(/[^0-9.]/g, '');
+    e.target.value = v;
+  });
+
+  document.getElementById('ipInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') calculate();
+  });
+  document.getElementById('subnetCount').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') calculate();
+  });
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = '⚠ ' + msg;
+    el.style.display = 'block';
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = 'shake 0.4s ease';
+  }
+
+  function hideError() {
+    document.getElementById('errorMsg').style.display = 'none';
+  }
+
+  function ipToInt(ip) {
+    return ip.split('.').reduce((acc, oct) => (acc << 8) + parseInt(oct, 10), 0) >>> 0;
+  }
+
+  function intToIp(n) {
+    return [
+      (n >>> 24) & 255,
+      (n >>> 16) & 255,
+      (n >>> 8) & 255,
+      n & 255
+    ].join('.');
+  }
+
+  function isValidIP(ip) {
+    const parts = ip.split('.');
+    if (parts.length !== 4) return false;
+    return parts.every(p => {
+      const n = parseInt(p, 10);
+      return !isNaN(n) && n >= 0 && n <= 255 && String(n) === p.trim();
+    });
+  }
+
+  function getDefaultPrefix(ip) {
+    const first = parseInt(ip.split('.')[0]);
+    if (first >= 1 && first <= 126) return 8;
+    if (first >= 128 && first <= 191) return 16;
+    if (first >= 192 && first <= 223) return 24;
+    return 24;
+  }
+
+  function getIPClass(ip) {
+    const first = parseInt(ip.split('.')[0]);
+    if (first >= 1 && first <= 126) return 'A';
+    if (first >= 128 && first <= 191) return 'B';
+    if (first >= 192 && first <= 223) return 'C';
+    if (first >= 224 && first <= 239) return 'D (Multicast)';
+    return 'E (Experimental)';
+  }
+
+  function bitsNeeded(n) {
+    return Math.ceil(Math.log2(n));
+  }
+
+  function calculate() {
+    hideError();
+
+    const ipRaw = document.getElementById('ipInput').value.trim();
+    const countRaw = parseInt(document.getElementById('subnetCount').value);
+    const classSelect = document.getElementById('classSelect').value;
+
+    if (!ipRaw) return showError('Ingresa una dirección IP.');
+    if (!isValidIP(ipRaw)) return showError('Dirección IP inválida. Formato: 192.168.1.0');
+    if (isNaN(countRaw) || countRaw < 1) return showError('Ingresa un número válido de subredes (mínimo 1).');
+    if (countRaw > 65536) return showError('Máximo 65,536 subredes soportadas.');
+
+    const basePrefix = classSelect === 'auto' ? getDefaultPrefix(ipRaw) : parseInt(classSelect);
+    const subBits = bitsNeeded(countRaw);
+    const newPrefix = basePrefix + subBits;
+
+    if (newPrefix > 30) return showError(`Se necesitan ${subBits} bits de subred pero la máscara resultante /${newPrefix} supera /30. Reduce la cantidad de subredes o cambia la clase base.`);
+
+    const hostBits = 32 - newPrefix;
+    const hostsPerSubnet = Math.pow(2, hostBits) - 2;
+    const totalSubnets = Math.pow(2, subBits);
+    const subnetSize = Math.pow(2, hostBits);
+
+    const baseMaskInt = newPrefix === 0 ? 0 : (~0 << (32 - newPrefix)) >>> 0;
+    const maskStr = intToIp(baseMaskInt);
+
+    const baseIPInt = ipToInt(ipRaw) & baseMaskInt;
+
+    // Build summary
+    const ipClass = getIPClass(ipRaw);
+    document.getElementById('subnetBadge').textContent = `${totalSubnets} SUBREDES GENERADAS`;
+
+    const summaryData = [
+      { label: 'IP Ingresada', value: ipRaw },
+      { label: 'Clase', value: 'Clase ' + ipClass },
+      { label: 'Máscara', value: maskStr },
+      { label: 'CIDR', value: `/${newPrefix}` },
+      { label: 'Hosts / Subred', value: hostsPerSubnet.toLocaleString() },
+      { label: 'Total Subredes', value: totalSubnets.toLocaleString() },
+    ];
+
+    const summaryEl = document.getElementById('summaryCards');
+    summaryEl.innerHTML = summaryData.map(s => `
+      <div class="sum-card">
+        <span class="sum-value">${s.value}</span>
+        <span class="sum-label">${s.label}</span>
+      </div>
+    `).join('');
+
+    // Build table
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+
+    const displayCount = Math.min(totalSubnets, countRaw);
+
+    for (let i = 0; i < displayCount; i++) {
+      const networkInt = (baseIPInt + i * subnetSize) >>> 0;
+      const broadcastInt = (networkInt + subnetSize - 1) >>> 0;
+      const firstHostInt = (networkInt + 1) >>> 0;
+      const lastHostInt = (broadcastInt - 1) >>> 0;
+
+      const networkStr = intToIp(networkInt);
+      const broadcastStr = intToIp(broadcastInt);
+      const firstStr = hostsPerSubnet > 0 ? intToIp(firstHostInt) : '—';
+      const lastStr = hostsPerSubnet > 0 ? intToIp(lastHostInt) : '—';
+
+      const tr = document.createElement('tr');
+      tr.style.animationDelay = `${Math.min(i * 30, 500)}ms`;
+      tr.innerHTML = `
+        <td class="td-num">${String(i + 1).padStart(2, '0')}</td>
+        <td class="td-network">${networkStr}<span class="cidr-badge">/${newPrefix}</span></td>
+        <td class="td-mask">${maskStr}</td>
+        <td class="td-range">${firstStr}</td>
+        <td class="td-range">${lastStr}</td>
+        <td class="td-broadcast">${broadcastStr}</td>
+        <td class="td-hosts">
+          ${hostsPerSubnet.toLocaleString()}
+          <div class="hosts-bar"><div class="hosts-fill" style="width:${Math.min(hostsPerSubnet/254*100,100)}%"></div></div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+</script>
+</body>
+</html>
